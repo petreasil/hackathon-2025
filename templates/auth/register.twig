@@ -2,6 +2,7 @@
 {% block title %}Register{% endblock %}
 {% block content %}
     <h1 class="text-2xl font-bold mb-4">Register</h1>
+    {% include 'components/alert.twig' %}
     <form action="/register" method="POST" class="max-w-sm mx-auto">
         <div class="mb-4">
             <label for="username" class="block text-gray-400 text-sm font-bold mb-2">Username</label>

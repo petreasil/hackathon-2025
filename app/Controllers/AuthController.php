@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Domain\Service\AlertGenerator;
 use App\Domain\Service\AuthService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -16,6 +17,7 @@ class AuthController extends BaseController
         Twig $view,
         private AuthService $authService,
         private LoggerInterface $logger,
+        private AlertGenerator $alertGenerator,
     ) {
         parent::__construct($view);
     }
@@ -30,26 +32,84 @@ class AuthController extends BaseController
 
     public function register(Request $request, Response $response): Response
     {
-        // TODO: call corresponding service to perform user registration
-
-        return $response->withHeader('Location', '/login')->withStatus(302);
+        $data = (array)$request->getParsedBody();
+        
+        // Validate input data
+        try {
+            $username = $data['username'] ?? '';
+            $password = $data['password'] ?? '';
+            $this->authService->register($username, $password);
+            $this->logger->info('User registered successfully', ['email' => $data['email'] ?? null]);
+            $_SESSION['alert'] = $this->alertGenerator->createAlert(
+        'success',
+        'Registration successful! You can now log in.'
+    );
+            return $response->withHeader('Location', '/login')->withStatus(302);
+        } catch (\Exception $e) {
+             
+             if ($e->getMessage() === 'Username already exists.') {
+            $_SESSION['alert'] = $this->alertGenerator->createAlert(
+                'danger',
+                'This username exists.'
+            );
+            $this->logger->error('User registration failed', ['error' => $e->getMessage()]);
+        } else {
+            $_SESSION['alert'] = $this->alertGenerator->createAlert(
+                'danger',
+                'Registration failed: ' . $e->getMessage()
+            );
+            $this->logger->error('User registration failed', ['error' => $e->getMessage()]);
+        }
+            
+            // Optionally, you could re-render the registration page with an error message
+            $response = $this->render($response, 'auth/register.twig', [
+                'error' => 'Registration failed: ' . $e->getMessage(),
+                'data' => $data,
+            ]);
+            unset($_SESSION['alert']);
+            return $response;
+        }
     }
 
     public function showLogin(Request $request, Response $response): Response
     {
-        return $this->render($response, 'auth/login.twig');
+        $response = $this->render($response, 'auth/login.twig');
+        unset($_SESSION['alert']);
+        return $response;
     }
 
     public function login(Request $request, Response $response): Response
     {
         // TODO: call corresponding service to perform user login, handle login failures
+         $data = (array)$request->getParsedBody();
+        $username = $data['username'] ?? '';
+        $password = $data['password'] ?? '';
+        if ($this->authService->attempt($username, $password)) {
+            $this->logger->info('User logged in successfully', ['username' => $username]);
+            $_SESSION['alert'] = $this->alertGenerator->createAlert(
+                'success',
+                'Login successful!'
+            );
+        } else {
+            $this->logger->warning('Login attempt failed', ['username' => $username]);
+            $_SESSION['alert'] = $this->alertGenerator->createAlert(
+                'danger',
+                'Invalid username or password.'
+            );
+            return $response->withHeader('Location', '/login')->withStatus(302);
+        }
 
         return $response->withHeader('Location', '/')->withStatus(302);
     }
 
     public function logout(Request $request, Response $response): Response
     {
-        // TODO: handle logout by clearing session data and destroying session
+        // Clear authentication/session data and destroy session
+        $this->authService->logout();
+        $_SESSION['alert'] = $this->alertGenerator->createAlert(
+            'success',
+            'You have been logged out.'
+        );
 
         return $response->withHeader('Location', '/login')->withStatus(302);
     }

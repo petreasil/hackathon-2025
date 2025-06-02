@@ -24,4 +24,11 @@ class AlertGenerator
 
         return [];
     }
+    public function createAlert(string $type, string $message): array
+{
+    return [
+        'type' => $type, 
+        'message' => $message,
+    ];
+}
 }
