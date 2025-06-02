@@ -1,0 +1,6 @@
+{% if session.alert %}
+    <div x-data="{ show: true }" x-show="show" class="mb-4 px-4 py-3 rounded {{ session.alert.type == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} flex items-center justify-between">
+        <span>{{ session.alert.message }}</span>
+        <button type="button" @click="show = false" class="ml-4 text-xl font-bold leading-none focus:outline-none">&times;</button>
+    </div>
+{% endif %}
