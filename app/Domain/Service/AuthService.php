@@ -11,6 +11,7 @@ class AuthService
 {
     public function __construct(
         private readonly UserRepositoryInterface $users,
+        private readonly AlertGenerator $alertGenerator, // Inject AlertGenerator
     ) {}
 
     public function register(string $username, string $password): User
@@ -51,5 +52,9 @@ class AuthService
     public function logout(): void
     {
         unset($_SESSION['user_id'], $_SESSION['user_email']);
+        $_SESSION['alert'] = $this->alertGenerator->createAlert(
+            'success',
+            'You have been logged out.'
+        );
     }
 }

@@ -104,13 +104,8 @@ class AuthController extends BaseController
 
     public function logout(Request $request, Response $response): Response
     {
-        // Clear authentication/session data and destroy session
+        // Clear authentication/session data and set alert in service
         $this->authService->logout();
-        $_SESSION['alert'] = $this->alertGenerator->createAlert(
-            'success',
-            'You have been logged out.'
-        );
-
         return $response->withHeader('Location', '/login')->withStatus(302);
     }
 }
