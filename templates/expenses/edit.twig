@@ -8,32 +8,29 @@
             <div class="mb-4 flex items-center">
                 <label for="date" class="w-24 text-gray-300 font-bold">Date:</label>
                 <input type="date" id="date" name="date" required
+                       value="{{ expense.date ? expense.date|date('Y-m-d') : '' }}"
                        class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline">
             </div>
             <div class="mb-4 flex items-center">
                 <label for="category" class="w-24 text-gray-300 font-bold">Category:</label>
-                {# TODO: populate with configured expense categories instead of the mock values #}
                 <select id="category" name="category" required
                         class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline">
                     <option value="">Select a category</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="utilities">Utilities</option>
-                    <option value="transport">Transport</option>
-                    <option value="entertainment">Entertainment</option>
-                    <option value="housing">Housing</option>
-                    <option value="health">Healthcare</option>
-                    <option value="other">Other</option>
+                    {% for key, label in categories %}
+                        <option value="{{ key }}" {% if expense.category == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="mb-4 flex items-center">
                 <label for="amount" class="w-24 text-gray-300 font-bold">Amount:</label>
                 <input type="number" id="amount" name="amount" step="0.01" required
+                       value="{{ expense.amountCents is defined ? (expense.amountCents / 100) : '' }}"
                        class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline">
             </div>
             <div class="mb-6 flex items-start">
                 <label for="description" class="w-24 text-gray-300 font-bold mt-2">Description:</label>
                 <textarea id="description" name="description" rows="2"
-                          class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                          class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline">{{ expense.description|default('') }}</textarea>
             </div>
             <div class="flex justify-end">
                 <button type="submit"

@@ -128,16 +128,38 @@ class ExpenseController extends BaseController
 
     public function edit(Request $request, Response $response, array $routeParams): Response
     {
-        // TODO: implement this action method to display the edit expense page
+        $categories = require __DIR__ . '/../../config/categories.php';
 
-        // Hints:
-        // - obtain the list of available categories from configuration and pass to the view
-        // - load the expense to be edited by its ID (use route params to get it)
-        // - check that the logged-in user is the owner of the edited expense, and fail with 403 if not
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            return $response->withStatus(401);
+        }
 
-        $expense = ['id' => 1];
+        $expenseId = $routeParams['id'] ?? null;
+        if (!$expenseId) {
+            return $response->withStatus(404);
+        }
 
-        return $this->render($response, 'expenses/edit.twig', ['expense' => $expense, 'categories' => []]);
+        $expense = $this->expenseService->findById((int)$expenseId);
+        $this->logger->info('Editing expense', [
+            'expense_id' => $expenseId,
+            'user_id' => $userId,
+            "expense" => $expense,
+        ]);
+        if (!$expense) {
+            return $response->withStatus(404);
+        }
+
+        // if ($expense->getUser()->getId() !== $userId) {
+        //     return $response->withStatus(403);
+        // }
+
+        return $this->render($response, 'expenses/edit.twig', [
+            'expense' => $expense,
+            'categories' => $categories,
+        ]);
+
+      
     }
 
     public function update(Request $request, Response $response, array $routeParams): Response

@@ -74,6 +74,12 @@ class ExpenseService
         // TODO: implement this to update expense entity, perform validation, and persist
     }
 
+    public function findById(int $id): ?Expense
+    {
+        // Fetch expense by ID
+        return $this->expenses->find($id);
+    }
+
     public function importFromCsv(User $user, UploadedFileInterface $csvFile): int
     {
         // TODO: process rows in file stream, create and persist entities
