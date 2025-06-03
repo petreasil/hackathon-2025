@@ -45,4 +45,5 @@ interface ExpenseRepositoryInterface
         int $pageNumber,
         int $pageSize
     ): array;
+    
 }

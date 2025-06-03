@@ -2,7 +2,7 @@
 {% block title %}Expenses{% endblock %}
 {% block content %}
 
-    {# TODO: remove mock data below, pass real expenses from the controller action #}
+    {# TODO: remove mock data below, pass real expenses from the controller action
     {% set expenses = [
         {'id': 1, 'description': 'Groceries', 'amount': 150.50, 'category': 'Food', 'date': '2025-05-31'},
         {'id': 2, 'description': 'Internet Bill', 'amount': 79.99, 'category': 'Utilities', 'date': '2025-05-25'},
@@ -10,11 +10,10 @@
         {'id': 4, 'description': 'Gas', 'amount': 45.75, 'category': 'Transportation', 'date': '2025-05-10'},
         {'id': 5, 'description': 'Gym Membership', 'amount': 50.00, 'category': 'Health', 'date': '2025-05-05'}
     ] %}
-    {% set total = 5 %}
+    {% set total = 5 %} #}
 
     <h1 class="text-2xl font-bold mb-4">Expenses</h1>
 
-    {# TODO: Configure the necessary href attribute #}
     <a href="/expenses/create"
        class="inline-block mb-6 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
         Add Expense
@@ -79,8 +78,7 @@
                     <td class="py-2 px-4">{{ expense.date|date('m/d/Y') }}</td>
                     <td class="py-2 px-4">{{ expense.category }}</td>
                     <td class="py-2 px-4">
-                        {# TODO: Configure the necessary href attribute #}
-                        <a href="#"
+                        <a href="/expenses/{{ expense.id }}/edit"
                            class="text-blue-500 hover:text-blue-400 mr-2">Edit</a>
                         {# TODO: Configure the necessary form action #}
                         <form action="#" method="POST" class="inline">
@@ -98,14 +96,14 @@
         <div class="mt-1 flex justify-center">{{ total }} item(s)</div>
         <div class="mt-1 flex justify-between">
             {% if total and page > 1 %}
-                {# TODO: fill in HREF #}
-                <a href="#" class="text-blue-500 hover:text-blue-400">Previous</a>
+            <a href="?year={{ year }}&month={{ month }}&page={{ page - 1 }}" class="text-blue-500 hover:text-blue-400">Prev</a>
             {% else %}
-                <span></span>
+            <span></span>
             {% endif %}
 
-            {# TODO: hide link when there is no next page available, fill in HREF #}
-            <a href="#" class="text-blue-500 hover:text-blue-400">Next</a>
+            {% if total and (page * perPage) < total %}
+            <a href="?year={{ year }}&month={{ month }}&page={{ page + 1 }}" class="text-blue-500 hover:text-blue-400">Next</a>
+            {% endif %}
         </div>
     </section>
 

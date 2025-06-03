@@ -51,12 +51,24 @@ class ExpenseController extends BaseController
         $filterMonth = $month ? (int)$month : (int)date('n');
 
         $expenses = $this->expenseService->list($user, $filterYear, $filterMonth, $page, $pageSize);
+        $this->logger->info('Expenses fetched', [
+            'user_id' => $userId,
+            'year' => $filterYear,
+            'month' => $filterMonth,
+            'page' => $page,
+            'pageSize' => $pageSize,
+
+        "expenses" => $expenses],);
+      
+        $total = count($expenses);
+      
 
         return $this->render($response, 'expenses/index.twig', [
             'expenses' => $expenses,
             'page'     => $page,
             'pageSize' => $pageSize,
             'year'     => $filterYear,
+            'total'    => $total,
             'month'    => $filterMonth,
         ]);
     }
@@ -88,28 +100,6 @@ class ExpenseController extends BaseController
         // Log the submitted data for debugging
         $this->logger->info('Expense form submitted', ['data' => $data, 'user_id' => $userId]);
 
-        // // Validate required fields
-        // $errors = [];
-        // if (empty($data['amount']) || !is_numeric($data['amount']) || $data['amount'] <= 0) {
-        //     $errors['amount'] = 'Amount is required and must be a positive number.';
-        // }
-        // if (empty($data['category']) || !in_array($data['category'], $categories, true)) {
-        //     $errors['category'] = 'Please select a valid category.';
-        // }
-        // if (empty($data['date']) || !strtotime($data['date'])) {
-        //     $errors['date'] = 'Please provide a valid date.';
-        // }
-        // if (empty($data['description'])) {
-        //     $errors['description'] = 'Description is required.';
-        // }
-
-        // if (!empty($errors)) {
-        //     return $this->render($response, 'expenses/create.twig', [
-        //         'categories' => $categories,
-        //         'errors' => $errors,
-        //         'old' => $data,
-        //     ]);
-        // }
 
         try {
             $this->expenseService->create(

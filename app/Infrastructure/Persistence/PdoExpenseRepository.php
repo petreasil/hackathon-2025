@@ -103,9 +103,10 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
      * @param int $pageSize
      * @return Expense[]
      */
-    public function findByUserAndDate(int $userId, int $year, int $month, int $pageNumber, int $pageSize): array
+    public function findByUserAndDate(int $userId, int $year, int $month, int $pageNumber, int $pageSize, ?int &$total = null): array
     {
         $offset = ($pageNumber - 1) * $pageSize;
+      
         $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY date DESC LIMIT :limit OFFSET :offset';
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':user_id', $userId, PDO::PARAM_INT);
@@ -121,6 +122,7 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
         }
         return $expenses;
     }
+    
 
     /**
      * @throws Exception
