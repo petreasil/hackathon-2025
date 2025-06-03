@@ -29,4 +29,20 @@ interface ExpenseRepositoryInterface
     public function averageAmountsByCategory(array $criteria): array;
 
     public function sumAmounts(array $criteria): float;
+
+     /**
+     * @param int $userId
+     * @param int $year
+     * @param int $month
+     * @param int $pageNumber
+     * @param int $pageSize
+     * @return array
+     */
+    public function findByUserAndDate(
+        int $userId,
+        int $year,
+        int $month,
+        int $pageNumber,
+        int $pageSize
+    ): array;
 }

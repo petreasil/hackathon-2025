@@ -8,17 +8,27 @@ use App\Domain\Entity\Expense;
 use App\Domain\Entity\User;
 use App\Domain\Repository\ExpenseRepositoryInterface;
 use DateTimeImmutable;
+use Psr\Log\LoggerInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
 class ExpenseService
 {
     public function __construct(
         private readonly ExpenseRepositoryInterface $expenses,
+        private LoggerInterface $logger,
     ) {}
 
     public function list(User $user, int $year, int $month, int $pageNumber, int $pageSize): array
     {
-        // TODO: implement this and call from controller to obtain paginated list of expenses
+        // Fetch paginated list of expenses for the user, filtered by year and month
+
+        return $this->expenses->findByUserAndDate(
+            $user->id,
+            $year,
+            $month,
+            $pageNumber,
+            $pageSize
+        );
         return [];
     }
 
@@ -29,11 +39,28 @@ class ExpenseService
         DateTimeImmutable $date,
         string $category,
     ): void {
-        // TODO: implement this to create a new expense entity, perform validation, and persist
+       
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than zero.');
+        }
+        if (empty($description)) {
+            throw new \InvalidArgumentException('Description cannot be empty.');
+        }
+        if (empty($category)) {
+            throw new \InvalidArgumentException('Category cannot be empty.');
+        }
 
-        // TODO: here is a code sample to start with
-        $expense = new Expense(null, $user->id, $date, $category, (int)$amount, $description);
+   
+        $expense = new Expense(
+            null,
+            $user->id,
+            $date,
+            $category,
+            (int)$amount,
+            $description
+        );
         $this->expenses->save($expense);
+   
     }
 
     public function update(
@@ -53,4 +80,5 @@ class ExpenseService
 
         return 0; // number of imported rows
     }
+
 }

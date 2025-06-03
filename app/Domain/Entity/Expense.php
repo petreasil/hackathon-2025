@@ -16,4 +16,36 @@ final class Expense
         public int $amountCents,
         public string $description,
     ) {}
-}
+        
+
+        public function getId(): ?int
+        {
+            return $this->id;
+        }
+
+        public function getUserId(): int
+        {
+            return $this->userId;
+        }
+
+        public function getDate(): DateTimeImmutable
+        {
+            return $this->date;
+        }
+
+        public function getCategory(): string
+        {
+            return $this->category;
+        }
+
+        public function getAmountCents(): int
+        {
+            return $this->amountCents;
+        }
+
+        public function getDescription(): string
+        {
+            return $this->description;
+        }
+    }
+
