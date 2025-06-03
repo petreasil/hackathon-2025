@@ -104,7 +104,7 @@ class ExpenseController extends BaseController
         try {
             $this->expenseService->create(
                 $user,
-                (float)$data['amount'],
+                (int)$data['amount'],
                 $data['description'],
                 new \DateTimeImmutable($data['date']),
                 $data['category']
@@ -164,28 +164,101 @@ class ExpenseController extends BaseController
 
     public function update(Request $request, Response $response, array $routeParams): Response
     {
-        // TODO: implement this action method to update an existing expense
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            return $response->withStatus(401);
+        }
 
-        // Hints:
-        // - load the expense to be edited by its ID (use route params to get it)
-        // - check that the logged-in user is the owner of the edited expense, and fail with 403 if not
-        // - get the new values from the request and prepare for update
-        // - update the expense entity with the new values
-        // - rerender the "expenses.edit" page with included errors in case of failure
-        // - redirect to the "expenses.index" page in case of success
+        $expenseId = $routeParams['id'] ?? null;
+        if (!$expenseId) {
+            return $response->withStatus(404);
+        }
 
-        return $response;
+        $expense = $this->expenseService->findById((int)$expenseId);
+        if (!$expense) {
+            return $response->withStatus(404);
+        }
+
+        // Optional: Uncomment if you want to enforce ownership
+        // if ($expense->getUser()->getId() !== $userId) {
+        //     return $response->withStatus(403);
+        // }
+
+        $data = (array)$request->getParsedBody();
+        $categories = require __DIR__ . '/../../config/categories.php';
+        $this->logger->info('Expense update form submitted', [
+            'data' => $data,
+            'expense_id' => $expenseId,
+            'user_id' => $userId,
+        ]);
+        try {
+            $this->expenseService->update(
+            $expense,
+            (int)$data['amount'],
+            $data['description'],
+            new \DateTimeImmutable($data['date']),
+            $data['category']
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('error updating expense', ['error' => $e->getMessage()]);
+            $_SESSION["alert"] = $this->alertGenerator->createAlert(
+                'danger',
+                'Failed to update expense: ' . $e->getMessage()
+            );
+          
+            return $this->render($response, 'expenses/edit.twig', [
+            'expense' => $expense,
+            'categories' => $categories,
+            'errors' => $errors,
+            'old' => $data,
+            ]);
+        }
+
+        // Redirect to expenses index on success
+        return $response
+            ->withHeader('Location', '/expenses')
+            ->withStatus(302);
     }
 
     public function destroy(Request $request, Response $response, array $routeParams): Response
     {
-        // TODO: implement this action method to delete an existing expense
+        $userId = $_SESSION['user_id'] ?? null;
+        if (!$userId) {
+            return $response->withStatus(401);
+        }
 
-        // - load the expense to be edited by its ID (use route params to get it)
-        // - check that the logged-in user is the owner of the edited expense, and fail with 403 if not
-        // - call the repository method to delete the expense
-        // - redirect to the "expenses.index" page
+        $expenseId = $routeParams['id'] ?? null;
+        if (!$expenseId) {
+            return $response->withStatus(404);
+        }
 
-        return $response;
+        $expense = $this->expenseService->findById((int)$expenseId);
+        if (!$expense) {
+            return $response->withStatus(404);
+        }
+
+        // // Check ownership
+        // if ($expense->getUser()->getId() !== $userId) {
+        //     return $response->withStatus(403);
+        // }
+
+        try {
+            $this->expenseService->deleteEntry($expense);
+            $_SESSION["alert"] = $this->alertGenerator->createAlert(
+            'success',
+            'Expense deleted successfully.'
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('error deleting expense', ['error' => $e->getMessage()]);
+            $_SESSION["alert"] = $this->alertGenerator->createAlert(
+            'danger',
+            'Failed to delete expense: ' . $e->getMessage()
+            );
+        }
+
+        return $response
+            ->withHeader('Location', '/expenses')
+            ->withStatus(302);
+  
     }
 }

@@ -44,6 +44,7 @@ class AuthController extends BaseController
         'success',
         'Registration successful! You can now log in.'
     );
+    unset($_SESSION['alert']);
             return $response->withHeader('Location', '/login')->withStatus(302);
         } catch (\Exception $e) {
              
@@ -66,7 +67,7 @@ class AuthController extends BaseController
                 'error' => 'Registration failed: ' . $e->getMessage(),
                 'data' => $data,
             ]);
-            unset($_SESSION['alert']);
+            
             return $response;
         }
     }
@@ -74,7 +75,7 @@ class AuthController extends BaseController
     public function showLogin(Request $request, Response $response): Response
     {
         $response = $this->render($response, 'auth/login.twig');
-        unset($_SESSION['alert']);
+      
         return $response;
     }
 
@@ -90,12 +91,14 @@ class AuthController extends BaseController
                 'success',
                 'Login successful!'
             );
+          
         } else {
             $this->logger->warning('Login attempt failed', ['username' => $username]);
             $_SESSION['alert'] = $this->alertGenerator->createAlert(
                 'danger',
                 'Invalid username or password.'
             );
+          
             return $response->withHeader('Location', '/login')->withStatus(302);
         }
 

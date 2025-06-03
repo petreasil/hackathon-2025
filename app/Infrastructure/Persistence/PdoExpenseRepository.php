@@ -35,6 +35,7 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
 
     public function save(Expense $expense): void
     {
+        
         if ($expense->getId() === null) {
             // Insert new expense
             $query = 'INSERT INTO expenses (user_id, date, category, amount_cents, description) VALUES (:user_id, :date, :category, :amount_cents, :description)';
@@ -47,7 +48,19 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
                 'description' => $expense->getDescription(),
             ]);
            
-        } 
+        } else {
+            // Update existing expense
+            $query = 'UPDATE expenses SET user_id = :user_id, date = :date, category = :category, amount_cents = :amount_cents, description = :description WHERE id = :id';
+            $statement = $this->pdo->prepare($query);
+            $statement->execute([
+                'id' => $expense->getId(),
+                'user_id' => $expense->getUserId(),
+                'date' => $expense->getDate()->format('Y-m-d'),
+                'category' => $expense->getCategory(),
+                'amount_cents' => $expense->getAmountCents(),
+                'description' => $expense->getDescription(),
+            ]);
+        }
     }
 
     public function delete(int $id): void
@@ -107,7 +120,7 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
     {
         $offset = ($pageNumber - 1) * $pageSize;
       
-        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY date DESC LIMIT :limit OFFSET :offset';
+        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY id DESC LIMIT :limit OFFSET :offset';
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $statement->bindValue(':year', (string)$year, PDO::PARAM_STR);

@@ -31,7 +31,11 @@ class ExpenseService
         );
         return [];
     }
-
+    public function deleteEntry(Expense $expense): void
+    {
+        // Delete the expense entry
+        $this->expenses->delete($expense->id);
+    }
    
     public function create(
         User $user,
@@ -71,7 +75,22 @@ class ExpenseService
         DateTimeImmutable $date,
         string $category,
     ): void {
-        // TODO: implement this to update expense entity, perform validation, and persist
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than zero.');
+        }
+        if (empty($description)) {
+            throw new \InvalidArgumentException('Description cannot be empty.');
+        }
+        if (empty($category)) {
+            throw new \InvalidArgumentException('Category cannot be empty.');
+        }
+// Update the properties of the existing expense object
+  $expense->amountCents = (int)$amount;
+  $expense->description = $description;
+  $expense->date = $date;
+  $expense->category = $category;
+
+$this->expenses->save($expense);
     }
 
     public function findById(int $id): ?Expense
