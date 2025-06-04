@@ -84,13 +84,13 @@ class ExpenseService
         if (empty($category)) {
             throw new \InvalidArgumentException('Category cannot be empty.');
         }
-// Update the properties of the existing expense object
-  $expense->amountCents = (int)$amount;
-  $expense->description = $description;
-  $expense->date = $date;
-  $expense->category = $category;
 
-$this->expenses->save($expense);
+        $expense->amountCents = (int)$amount;
+        $expense->description = $description;
+        $expense->date = $date;
+        $expense->category = $category;
+
+        $this->expenses->save($expense);
     }
 
     public function findById(int $id): ?Expense
@@ -98,7 +98,13 @@ $this->expenses->save($expense);
         // Fetch expense by ID
         return $this->expenses->find($id);
     }
+    public function findBy(array $criteria, int $from, int $limit): array
+    {
+        // Delegate to repository, passing criteria and pagination
+        return $this->expenses->findBy($criteria, $from, $limit);
+    }
 
+   
     public function importFromCsv(User $user, UploadedFileInterface $csvFile): int
     {
         // TODO: process rows in file stream, create and persist entities

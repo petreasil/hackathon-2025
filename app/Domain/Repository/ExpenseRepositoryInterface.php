@@ -45,5 +45,7 @@ interface ExpenseRepositoryInterface
         int $pageNumber,
         int $pageSize
     ): array;
+
+    public function getCategoriesForUser(int $userId, int $year, int $month): array;
     
 }
