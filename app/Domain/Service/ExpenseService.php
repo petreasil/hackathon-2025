@@ -104,6 +104,11 @@ class ExpenseService
         return $this->expenses->findBy($criteria, $from, $limit);
     }
 
+    public function listExpenditureYears(User $user): array
+    {
+        // Fetch years with expenditures for the user
+        return $this->expenses->listExpenditureYears($user);
+    }
    
     public function importFromCsv(User $user, UploadedFileInterface $csvFile): int
     {

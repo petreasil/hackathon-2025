@@ -266,7 +266,7 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
     {
         $offset = ($pageNumber - 1) * $pageSize;
   
-        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY id DESC LIMIT :limit OFFSET :offset';
+        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY id ASC LIMIT :limit OFFSET :offset';
         $statement = $this->pdo->prepare($query);
         $statement->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $statement->bindValue(':year', (string)$year, PDO::PARAM_STR);

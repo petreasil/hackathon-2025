@@ -35,6 +35,8 @@ class ExpenseController extends BaseController
             // Redirect to login or return 401 Unauthorized
             return $response->withStatus(401);
         }
+        $user = $this->userRepository->find($userId);
+        $options = $this->expenseService->listExpenditureYears($user);
         $year = $request->getQueryParams()['year'] ?? null;
         $month = $request->getQueryParams()['month'] ?? null;
         $page = (int)($request->getQueryParams()['page'] ?? 1);
@@ -51,14 +53,6 @@ class ExpenseController extends BaseController
         $filterMonth = $month ? (int)$month : (int)date('n');
 
         $expenses = $this->expenseService->list($user, $filterYear, $filterMonth, $page, $pageSize);
-        $this->logger->info('Expenses fetched', [
-            'user_id' => $userId,
-            'year' => $filterYear,
-            'month' => $filterMonth,
-            'page' => $page,
-            'pageSize' => $pageSize,
-
-        "expenses" => $expenses],);
       
         $total = count($expenses);
       
@@ -70,13 +64,12 @@ class ExpenseController extends BaseController
             'year'     => $filterYear,
             'total'    => $total,
             'month'    => $filterMonth,
+            'options'  => $options,
         ]);
     }
 
     public function create(Request $request, Response $response): Response
     {
-        
-        // Load categories from config file
         $categories = require __DIR__ . '/../../config/categories.php';
         return $this->render($response, 'expenses/create.twig', ['categories' => $categories]);
     }
