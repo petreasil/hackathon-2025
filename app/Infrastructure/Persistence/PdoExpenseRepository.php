@@ -265,21 +265,31 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
     public function findByUserAndDate(int $userId, int $year, int $month, int $pageNumber, int $pageSize, ?int &$total = null): array
     {
         $offset = ($pageNumber - 1) * $pageSize;
-  
-        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY id ASC LIMIT :limit OFFSET :offset';
+        $query2 = 'SELECT COUNT(*) as count FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month';
+        $query = 'SELECT * FROM expenses WHERE user_id = :user_id AND strftime("%Y", date) = :year AND strftime("%m", date) = :month ORDER BY id DESC LIMIT :limit OFFSET :offset';
         $statement = $this->pdo->prepare($query);
+        $statement2 = $this->pdo->prepare($query2);
         $statement->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $statement->bindValue(':year', (string)$year, PDO::PARAM_STR);
         $statement->bindValue(':month', str_pad((string)$month, 2, '0', STR_PAD_LEFT), PDO::PARAM_STR);
         $statement->bindValue(':limit', $pageSize, PDO::PARAM_INT);
         $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
         $statement->execute();
-        $results = $statement->fetchAll();
+        $statement2->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $statement2->bindValue(':year', (string)$year, PDO::PARAM_STR);
+        $statement2->bindValue(':month', str_pad((string)$month, 2, '0', STR_PAD_LEFT), PDO::PARAM_STR);
+        $statement2->execute();
+        $results = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $totalRow = $statement2->fetch(PDO::FETCH_ASSOC);
+        $totalCount = isset($totalRow['count']) ? (int)$totalRow['count'] : 0;
         $expenses = [];
         foreach ($results as $data) {
             $expenses[] = $this->createExpenseFromData($data);
         }
-        return $expenses;
+        return [
+            'total' => $totalCount,
+            'expenses' => $expenses,
+        ];
     }
     
 

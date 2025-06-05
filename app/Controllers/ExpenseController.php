@@ -52,11 +52,10 @@ class ExpenseController extends BaseController
         $filterYear = $year ? (int)$year : (int)date('Y');
         $filterMonth = $month ? (int)$month : (int)date('n');
 
-        $expenses = $this->expenseService->list($user, $filterYear, $filterMonth, $page, $pageSize);
+        $result = $this->expenseService->list($user, $filterYear, $filterMonth, $page, $pageSize);
+    
+        ['total' => $total, 'expenses' => $expenses] = $result;
       
-        $total = count($expenses);
-      
-
         return $this->render($response, 'expenses/index.twig', [
             'expenses' => $expenses,
             'page'     => $page,
