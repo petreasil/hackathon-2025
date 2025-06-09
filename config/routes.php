@@ -16,6 +16,7 @@ return static function (App $app) {
 
     $app->group('', function (RouteCollectorProxy $firewalled) {
         $firewalled->get('/', [DashboardController::class, 'index']);
+        $firewalled->post('/', [DashboardController::class, 'index']);
         $firewalled->group('/expenses', function (RouteCollectorProxy $expense) {
             $expense->get('', [ExpenseController::class, 'index']);
             $expense->get('/create', [ExpenseController::class, 'create']);

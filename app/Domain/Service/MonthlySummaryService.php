@@ -18,25 +18,34 @@ class MonthlySummaryService
     public function computeTotalExpenditure(User $user, int $year, int $month): float
     {
         // TODO: compute expenses total for year-month for a given user delegate to repository
-        return 0;
+        $categories = $this->expenses->getCategoriesForUser($user->getId(), $year, $month);
+        $criteria = [
+            'user_id' => $user->getId(),
+            'date' => $year,
+            'month' => $month,
+            'category' => $categories,
+        ];
+        $sum = $this->expenses->countBy($criteria);
+        
+      
+        return $sum;
     }
 
     public function computePerCategoryTotals(User $user, int $year, int $month): array
     {
         // Use countBy to get the number of expenses per category for the user in the given month/year
         $categories = $this->expenses->getCategoriesForUser($user->getId(), $year, $month);
-        $this->logger->debug('Categories for user', ['categories' => $categories]);
-        $result = [];
-        foreach ($categories as $category) {
-            $criteria = [
+        $criteria = [
             'user_id' => $user->getId(),
             'date' => $year,
             'month' => $month,
-            'category' => $category,
-            ];
-            $result[$category] = $this->expenses->countBy($criteria);
-        }
-        return $result;
+            'category' => $categories,
+        ];
+        $sum = $this->expenses->sumAmountsByCategory($criteria);
+       
+      
+        
+        return $sum;
     }
 
     public function computePerCategoryAverages(User $user, int $year, int $month): array
@@ -48,8 +57,7 @@ class MonthlySummaryService
             'month' => $month,
             'categories' => $categories,
         ];
-        $this->logger->debug('Categories for user', ['categories' => $categories]);
-
+       
         $averages = $this->expenses->averageAmountsByCategory($criteria);
         
         return $averages;
@@ -57,17 +65,17 @@ class MonthlySummaryService
 
     public function getOverspendingAlerts(User $user, int $year, int $month): array
     {
-        $limit = 5000;
-        $alerts = [];
-        $totals = $this->computePerCategoryTotals($user, $year, $month);
-
-        foreach ($totals as $category => $total) {
-            if ($total > $limit) {
-                $alerts[$category] = $total - $limit;
-            }
+    $limit = 5000;
+    $alerts = [];
+    $totals = $this->computePerCategoryTotals($user, $year, $month);
+    
+    foreach ($totals as $category => $total) {
+        if (is_numeric($total) && $total > $limit) {
+            $alerts[$category] = (int)($total - $limit);
         }
+    }
 
-        return $alerts;
+    return $alerts;
     }
 
     public function getAvailableYears(User $user): array

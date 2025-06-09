@@ -114,112 +114,139 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
 
     public function countBy(array $criteria): int
     {
-        $where = [];
-        $params = [];
-        foreach ($criteria as $key => $value) {
-            if ($key === 'month') {
-            // Skip, handled below
-            continue;
-            }
-            if ($key === 'date') {
-            // We'll use this as year
-            $where[] = 'strftime("%Y", date) = :year';
-            $params['year'] = (string)$value;
-            } else {
-            $where[] = "$key = :$key";
-            $params[$key] = $value;
-            }
-        }
-        // Handle month if present in criteria
-        if (isset($criteria['month'])) {
-            $where[] = 'strftime("%m", date) = :month';
-            $params['month'] = str_pad((string)$criteria['month'], 2, '0', STR_PAD_LEFT);
-        }
-        $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $query = "SELECT * FROM expenses $whereSql";
-        $statement = $this->pdo->prepare($query);
-        foreach ($params as $key => $value) {
-            $statement->bindValue(":$key", $value);
-        }
-        $statement->execute();
-        $result = $statement->fetch(PDO::FETCH_ASSOC);
-        return (int)($result['amount_cents'] ?? 0);
+    $sql = "SELECT SUM(amount_cents) AS total FROM expenses WHERE 1=1";
+    $params = [];
+
+    if (isset($criteria['user_id'])) {
+        $sql .= " AND user_id = :user_id";
+        $params[':user_id'] = $criteria['user_id'];
+    }
+
+    if (isset($criteria['date'])) {
+        $sql .= " AND strftime('%Y', date) = :year";
+        $params[':year'] = (string)$criteria['date'];
+    }
+
+    if (isset($criteria['month'])) {
+        $sql .= " AND strftime('%m', date) = :month";
+        $params[':month'] = str_pad((string)$criteria['month'], 2, '0', STR_PAD_LEFT);
+    }
+
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+
+    $result = $stmt->fetchColumn();
+    return $result !== null ? (int)$result : 0;
        
     }
    
 
     public function sumAmountsByCategory(array $criteria): array
     {
-        $where = [];
-        $params = [];
-        foreach ($criteria as $key => $value) {
-            $where[] = "$key = :$key";
-            $params[$key] = $value;
+    $sql = "SELECT category, SUM(amount_cents) AS total FROM expenses WHERE 1=1";
+    $params = [];
+
+    // Filter by user_id
+    if (isset($criteria['user_id'])) {
+        $sql .= " AND user_id = :user_id";
+        $params[':user_id'] = $criteria['user_id'];
+    }
+
+    // Filter by year from DATE column
+    if (isset($criteria['date'])) {
+        $sql .= " AND strftime('%Y', date) = :year";
+        $params[':year'] = (string)$criteria['date'];
+    }
+
+    // Filter by month from DATE column
+    if (isset($criteria['month'])) {
+        $sql .= " AND strftime('%m', date) = :month";
+        $params[':month'] = str_pad((string)$criteria['month'], 2, '0', STR_PAD_LEFT);
+    }
+
+    // Filter by category list
+    if (!empty($criteria['category']) && is_array($criteria['category'])) {
+        $placeholders = [];
+        foreach ($criteria['category'] as $index => $cat) {
+            $key = ":cat$index";
+            $placeholders[] = $key;
+            $params[$key] = $cat;
         }
-        $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $query = "SELECT category, SUM(amount_cents) as total_cents FROM expenses $whereSql GROUP BY category";
-        $statement = $this->pdo->prepare($query);
-        foreach ($params as $key => $value) {
-            $statement->bindValue(":$key", $value);
-        }
-        $statement->execute();
-        $results = $statement->fetchAll(PDO::FETCH_ASSOC);
-        $sums = [];
-        foreach ($results as $row) {
-            $sums[$row['category']] = (int)$row['total_cents'];
-        }
-        return $sums;
+        $sql .= " AND category IN (" . implode(', ', $placeholders) . ")";
+    }
+
+    $sql .= " GROUP BY category";
+
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+
+    $results = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // [category => total]
+
+    // Return all categories from criteria with 0 fallback
+    $totals = [];
+    foreach ($criteria['category'] as $cat) {
+        $totals[$cat] = isset($results[$cat]) ? (int)$results[$cat] : 0;
+    }
+    
+    return $totals;
     }
 
     public function averageAmountsByCategory(array $criteria): array
     {
-        $this->logger->debug('Calculating averages for last 5 months', ['criteria' => $criteria]);
+    $categories = $criteria['categories'] ?? [];
 
-        // Calculate the start and end date for the last 5 months (including current)
-        $year = $criteria['date'] ?? (int)date('Y');
-        $month = $criteria['month'] ?? (int)date('n');
-        $userId = $criteria['user_id'] ?? null;
+    if (empty($categories)) return [];
 
-        $start = (new \DateTimeImmutable("$year-$month-01"))->modify('-4 months')->setTime(0, 0);
-        $end = (new \DateTimeImmutable("$year-$month-01"))->modify('last day of this month')->setTime(23, 59, 59);
+    // Ensure totals use the correct key
+    $totals = $this->sumAmountsByCategory([
+        'user_id' => $criteria['user_id'] ?? null,
+        'date' => $criteria['date'] ?? null,
+        'month' => $criteria['month'] ?? null,
+        'category' => $categories,
+    ]);
 
-        $params = [
-            ':user_id' => $userId,
-            ':start_date' => $start->format('Y-m-d'),
-            ':end_date' => $end->format('Y-m-d'),
-        ];
+    // Prepare base query for counts
+    $sql = "SELECT category, COUNT(*) AS count FROM expenses WHERE 1=1";
+    $params = [];
 
-        $query = "SELECT category, amount_cents as total_cents
-              FROM expenses
-              WHERE user_id = :user_id
-                AND date BETWEEN :start_date AND :end_date
-              GROUP BY category";
+    if (!empty($criteria['user_id'])) {
+        $sql .= " AND user_id = :user_id";
+        $params[':user_id'] = $criteria['user_id'];
+    }
 
-        $statement = $this->pdo->prepare($query);
-        foreach ($params as $key => $value) {
-            $statement->bindValue($key, $value);
-        }
-        $statement->execute();
-        $results = $statement->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($criteria['date'])) {
+        $sql .= " AND strftime('%Y', date) = :year";
+        $params[':year'] = (string) $criteria['date'];
+    }
 
-        $averages = [];
-        $totalSum = 0;
-        foreach ($results as $row) {
-            $category = $row['category'];
-            $sum = (int)$row['total_cents'];
-            $averageValue = $sum / 5;
-            $averages[$category] = [
-            'value' => $averageValue,
+    if (!empty($criteria['month'])) {
+        $sql .= " AND strftime('%m', date) = :month";
+        $params[':month'] = str_pad((string) $criteria['month'], 2, '0', STR_PAD_LEFT);
+    }
 
-            ];
-            $totalSum += $sum;
-        }
-        foreach ($averages as $category => &$data) {
-            $data['percentage'] = $totalSum > 0 ? ($data['value'] / ($totalSum / 5)) * 100 : 0;
-        }
-        unset($data);
+    // Handle category list
+    $placeholders = [];
+    foreach ($categories as $i => $cat) {
+        $key = ":cat$i";
+        $placeholders[] = $key;
+        $params[$key] = $cat;
+    }
+    $sql .= " AND category IN (" . implode(', ', $placeholders) . ")";
+    $sql .= " GROUP BY category";
 
-        return $averages;
+    $stmt = $this->pdo->prepare($sql);
+    $stmt->execute($params);
+    $counts = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // [category => count]
+
+    // Calculate average = total / count, with fallback to 0
+    $averages = [];
+    foreach ($categories as $cat) {
+        $total = $totals[$cat] ?? 0;
+        $count = $counts[$cat] ?? 0;
+        $averages[$cat] = $count > 0 ? (int) round($total / $count) : 0;
+    }
+
+    return $averages;
     }
 
     public function sumAmounts(array $criteria): float

@@ -30,7 +30,7 @@ class DashboardController extends BaseController
         $params = $request->getQueryParams();
         $selectedYear = $params['year'] ?? date('Y');
         $selectedMonth = $params['month'] ?? date('m');
-
+        
         // Load the currently logged-in user
         $user = null;
         $userId = $_SESSION['user_id'] ?? null;
@@ -53,21 +53,14 @@ class DashboardController extends BaseController
         $alerts = $this->monthlySummaryService->getOverspendingAlerts($user, (int)$selectedYear, (int)$selectedMonth);
 
         // Call service to compute total expenditure per selected year/month
-        $totalForMonth = $this->monthlySummaryService->computePerCategoryTotals($user, (int)$selectedYear, (int)$selectedMonth);
+        $totalForMonth = $this->monthlySummaryService->computeTotalExpenditure($user, (int)$selectedYear, (int)$selectedMonth);
 
         // Call service to compute category totals per selected year/month
         $totalsForCategories = $this->monthlySummaryService->computePerCategoryTotals($user, (int)$selectedYear, (int)$selectedMonth);
-
+        
         // Call service to compute category averages per selected year/month
         $averagesForCategories = $this->monthlySummaryService->computePerCategoryAverages($user, (int)$selectedYear, (int)$selectedMonth);
-        $this->logger->info('Dashboard data fetched', [
-           
-            'av' => $averagesForCategories['categories'],
-            
-        ]);
-       
-        $totalCalculatedForMonth = array_sum($totalForMonth);
-
+        
         $totalsForCategoriesView = [];
         $grandTotal = array_sum($totalsForCategories);
         foreach ($totalsForCategories as $category => $value) {
@@ -77,15 +70,29 @@ class DashboardController extends BaseController
             'percentage' => $percentage,
             ];
         }
-       
-        //need a function to calculate avarage per category like  value and percentage
+
+        $averagesForCategoriesView = [];
+        $grandAverage = array_sum($averagesForCategories);
+        foreach ($averagesForCategories as $category => $value) {
+            $percentage = $grandAverage > 0 ? round(($value / $grandAverage) * 100, 2) : 0;
+            $averagesForCategoriesView[$category] = [
+            'value' => $value,
+            'percentage' => $percentage,
+            ];
+        }
+
         
+     
         return $this->render($response, 'dashboard.twig', [
+            "selectedYear"=> $selectedYear,
+            'selectedMonth'=> $selectedMonth,
             'years'                 => $availableYears,
             'alerts'                => $alerts,
-            'totalForMonth'         => $totalCalculatedForMonth,
+            'totalForMonth'         => $totalForMonth,
             'totalsForCategories'   => $totalsForCategoriesView,
-            'averagesForCategories' => $averagesForCategories,
+            'averagesForCategories' => $averagesForCategoriesView,
         ]);
     }
+
+   
 }
