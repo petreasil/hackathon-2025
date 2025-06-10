@@ -253,4 +253,53 @@ class ExpenseController extends BaseController
             ->withStatus(302);
   
     }
+    public function import (Request $request, Response $response, array $routeParams):Response{
+    // Get uploaded CSV file from input
+    $uploadedFiles = $request->getUploadedFiles();
+    if (!isset($uploadedFiles['csv'])) {
+        $_SESSION["alert"] = $this->alertGenerator->createAlert('danger', 'No file uploaded.');
+        return $response->withHeader('Location', '/expenses')->withStatus(302);
+    }
+    $csvFile = $uploadedFiles['csv'];
+    if ($csvFile->getError() !== UPLOAD_ERR_OK) {
+        $_SESSION["alert"] = $this->alertGenerator->createAlert('danger', 'Error uploading file.');
+        return $response->withHeader('Location', '/expenses')->withStatus(302);
+    }
+
+    $userId = $_SESSION['user_id'] ?? null;
+    if (!$userId) {
+        $_SESSION["alert"] = $this->alertGenerator->createAlert('danger', 'Unauthorized.');
+        return $response->withHeader('Location', '/expenses')->withStatus(302);
+    }
+    $user = $this->userRepository->find($userId);
+    if (!$user) {
+        $_SESSION["alert"] = $this->alertGenerator->createAlert('danger', 'User not found.');
+        return $response->withHeader('Location', '/expenses')->withStatus(302);
+    }
+
+    try {
+        $imported = $this->expenseService->importFromCsv($user, $csvFile);
+        if ($imported > 0) {
+            $_SESSION["alert"] = $this->alertGenerator->createAlert(
+                'success',
+                "$imported expenses imported successfully."
+            );
+        } else {
+            $_SESSION["alert"] = $this->alertGenerator->createAlert(
+                'warning',
+                "No expenses were imported."
+            );
+        }
+    } catch (\Exception $e) {
+        $_SESSION["alert"] = $this->alertGenerator->createAlert(
+            'danger',
+            "Failed to import expenses: " . $e->getMessage()
+        );
+    }
+    
+    
+    return $response->withHeader('Location','/expenses')->withStatus(302);
+    }
+
+
 }

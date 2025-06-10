@@ -112,10 +112,65 @@ class ExpenseService
    
     public function importFromCsv(User $user, UploadedFileInterface $csvFile): int
     {
-        // TODO: process rows in file stream, create and persist entities
-        // TODO: for extra points wrap the whole import in a transaction and rollback only in case writing to DB fails
+        $imported = 0;
+        $stream = $csvFile->getStream()->detach(); // get the native resource
+        $handle = fopen('php://temp', 'r+');
+        stream_copy_to_stream($stream, $handle);
+        rewind($handle);
 
-        return 0; // number of imported rows
+        
+        if (method_exists($this->expenses, 'beginTransaction')) {
+            $this->expenses->beginTransaction();
+        }
+
+        try {
+            // Assume first row is header
+            $header = fgetcsv($handle);
+            if (!$header) {
+            throw new \RuntimeException('CSV file is empty or invalid.');
+            }
+
+            while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < 4) {
+                continue; // skip invalid rows
+            }
+            [$date, $amount, $description, $category] = $row;
+
+            try {
+                $expense = new Expense(
+                null,
+                $user->id,
+                new DateTimeImmutable($date),
+                $category,
+                (int)$amount,
+                $description
+                );
+                $this->expenses->save($expense);
+                $imported++;
+            } catch (\Throwable $e) {
+                $this->logger->error('Failed to import expense row', [
+                'row' => $row,
+                'error' => $e->getMessage(),
+                ]);
+                // Optionally skip or stop on error
+            }
+            }
+
+            if (method_exists($this->expenses, 'commit')) {
+            $this->expenses->commit();
+            }
+        } catch (\Throwable $e) {
+            if (method_exists($this->expenses, 'rollback')) {
+            $this->expenses->rollback();
+            }
+            throw $e;
+        } finally {
+            fclose($handle);
+        }
+
+        return $imported; 
+
+       
     }
 
 }

@@ -334,4 +334,18 @@ class PdoExpenseRepository implements ExpenseRepositoryInterface
             $data['description'],
         );
     }
+
+    public function beginTransaction(): void
+    {
+        $this->pdo->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->pdo->commit();
+    }
+    public function rollback(): void
+    {
+        $this->pdo->rollBack();
+    }
 }

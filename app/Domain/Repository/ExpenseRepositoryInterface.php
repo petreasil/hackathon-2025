@@ -47,5 +47,8 @@ interface ExpenseRepositoryInterface
     ): array;
 
     public function getCategoriesForUser(int $userId, int $year, int $month): array;
+    public function beginTransaction(): void;
+    public function commit():void;
+    public function rollback():void;
     
 }
