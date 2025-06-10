@@ -11,17 +11,12 @@
             </div>
             <div class="mb-4 flex items-center">
                 <label for="category" class="w-24 text-gray-300 font-bold">Category:</label>
-                {# TODO: populate with configured expense categories instead of the mock values #}
                 <select id="category" name="category" required
                         class="flex-1 shadow appearance-none border rounded py-2 px-3 bg-gray-700 text-gray-100 leading-tight focus:outline-none focus:shadow-outline">
                     <option value="">Select a category</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="utilities">Utilities</option>
-                    <option value="transport">Transport</option>
-                    <option value="entertainment">Entertainment</option>
-                    <option value="housing">Housing</option>
-                    <option value="health">Healthcare</option>
-                    <option value="other">Other</option>
+                    {% for key, label in categories %}
+                        <option value="{{ key }}">{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="mb-4 flex items-center">
