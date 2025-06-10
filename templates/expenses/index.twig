@@ -107,12 +107,31 @@
         <h2 class="text-xl font-bold mb-4">Import expenses from CSV</h2>
         <form action="expenses/import" method="POST" enctype="multipart/form-data" class="flex items-center gap-4">
             <label for="csvFile" class="text-gray-300 text-sm font-bold">CSV File</label>
-            <input type="file" id="csv" name="csv" accept=".csv" required
-                   class="shadow appearance-none border rounded py-2 px-3 text-gray-500 leading-tight focus:outline-none focus:shadow-outline">
+            <div class="flex items-center gap-2">
+                <input type="file" id="csv" name="csv" accept=".csv" required
+                   class="shadow appearance-none border rounded py-2 px-3 text-gray-500 leading-tight focus:outline-none focus:shadow-outline"
+                   onchange="document.getElementById('csv-filename').textContent = this.files[0] ? this.files[0].name : '';">
+            </div>
             <button type="submit"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                Import
+                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Import
             </button>
+            <button type="button"
+                id="csv-delete-btn"
+                style="display:none"
+                onclick="
+                    document.getElementById('csv').value = '';
+                    document.getElementById('csv-filename').textContent = '';
+                    this.style.display = 'none';
+                "
+                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Clear
+            </button>
+            <script>
+                document.getElementById('csv').addEventListener('change', function() {
+                    document.getElementById('csv-delete-btn').style.display = this.files.length ? '' : 'none';
+                });
+            </script>
         </form>
     </section>
 {% endblock %}
